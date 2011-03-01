@@ -62,30 +62,30 @@
 
 %% @doc retrieve memcached stats
 stats() ->
-	gen_server2:call(?SERVER, {stats}).
+	gen_server2:call(?SERVER, stats).
 
 %% @doc retrieve memcached stats based on args
 stats(Args) when is_atom(Args)->
 	stats(atom_to_list(Args));
 stats(Args) ->
-	gen_server2:call(?SERVER, {stats, {Args}}).
+	gen_server2:call(?SERVER, {stats, Args}).
 
 %% @doc retrieve memcached version
 version() ->
-	gen_server2:call(?SERVER, {version}).
+	gen_server2:call(?SERVER, version).
 
 %% @doc set the verbosity level of the logging output
 verbosity(Args) when is_integer(Args) ->
 	verbosity(integer_to_list(Args));
 verbosity(Args)->
-	case gen_server2:call(?SERVER, {verbosity, {Args}}) of
+	case gen_server2:call(?SERVER, {verbosity, Args}) of
 		["OK"] -> ok;
 		[X] -> X
 	end.
 
 %% @doc invalidate all existing items immediately
 flushall() ->
-	case gen_server2:call(?SERVER, {flushall}) of
+	case gen_server2:call(?SERVER, flushall) of
 		["OK"] -> ok;
 		[X] -> X
 	end.
@@ -94,7 +94,7 @@ flushall() ->
 flushall(Delay) when is_integer(Delay) ->
 	flushall(integer_to_list(Delay));
 flushall(Delay) ->
-	case gen_server2:call(?SERVER, {flushall, {Delay}}) of
+	case gen_server2:call(?SERVER, {flushall, Delay}) of
 		["OK"] -> ok;
 		[X] -> X
 	end.
@@ -103,7 +103,7 @@ flushall(Delay) ->
 getkey(Key) when is_atom(Key) ->
 	getkey(atom_to_list(Key));
 getkey(Key) ->
-	case gen_server2:call(?SERVER, {getkey,{Key}}) of
+	case gen_server2:call(?SERVER, {getkey, Key}) of
 	    ["END"] -> undefined;
 	    [X] -> X
 	end.
@@ -112,7 +112,7 @@ getkey(Key) ->
 getskey(Key) when is_atom(Key) ->
 	getskey(atom_to_list(Key));
 getskey(Key) ->
-	case gen_server2:call(?SERVER, {getskey,{Key}}) of
+	case gen_server2:call(?SERVER, {getskey, Key}) of
 	    ["END"] -> undefined;
 	    [X] -> X
 	end.
@@ -248,35 +248,35 @@ start_link(Host, Port) ->
 init([Host, Port]) ->
     gen_tcp:connect(Host, Port, ?TCP_OPTS).
 
-handle_call({stats}, _From, Socket) ->
+handle_call(stats, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"stats">>])),
     {reply, Reply, Socket};
 
-handle_call({stats, {Args}}, _From, Socket) ->
+handle_call({stats, Args}, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"stats ">>, Args])),
     {reply, Reply, Socket};
 
-handle_call({version}, _From, Socket) ->
+handle_call(version, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"version">>])),
     {reply, Reply, Socket};
 
-handle_call({verbosity, {Args}}, _From, Socket) ->
+handle_call({verbosity, Args}, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"verbosity ">>, Args])),
     {reply, Reply, Socket};
 
-handle_call({flushall}, _From, Socket) ->
+handle_call(flushall, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"flush_all">>])),
     {reply, Reply, Socket};
 
-handle_call({flushall, {Delay}}, _From, Socket) ->
+handle_call({flushall, Delay}, _From, Socket) ->
     Reply = send_generic_cmd(Socket, iolist_to_binary([<<"flush_all ">>, Delay])),
     {reply, Reply, Socket};
 
-handle_call({getkey, {Key}}, _From, Socket) ->
+handle_call({getkey, Key}, _From, Socket) ->
     Reply = send_get_cmd(Socket, iolist_to_binary([<<"get ">>, Key])),
     {reply, Reply, Socket};
 
-handle_call({getskey, {Key}}, _From, Socket) ->
+handle_call({getskey, Key}, _From, Socket) ->
     Reply = send_gets_cmd(Socket, iolist_to_binary([<<"gets ">>, Key])),
     {reply, [Reply], Socket};
 
@@ -344,6 +344,7 @@ handle_cast(stop, State) ->
 handle_cast(_Msg, State) -> {noreply, State}.
 
 %% @private
+handle_info({tcp_closed, State}, State) -> {stop, tcp_closed, State};
 handle_info(_Info, State) -> {noreply, State}.
 
 %% @private
