@@ -44,21 +44,21 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 11211).
 -define(TCP_OPTS, [
-    binary, {packet, raw}, {nodelay, true},{reuseaddr, true}, {active, true}
-]).
+                   binary, {packet, raw}, {nodelay, true},{reuseaddr, true}, {active, true}
+                  ]).
 
 %% gen_server API
 -export([
-    stats/0, stats/1, version/0, getkey/1, delete/2, set/4, add/4, replace/2,
-    replace/4, cas/5, set/2, flushall/0, flushall/1, verbosity/1, add/2,
-    cas/3, getskey/1, connect/0, connect/2, delete/1, disconnect/0
-]).
+         stats/0, stats/1, version/0, getkey/1, delete/2, set/4, add/4, replace/2,
+         replace/4, cas/5, set/2, flushall/0, flushall/1, verbosity/1, add/2,
+         cas/3, getskey/1, connect/0, connect/2, delete/1, disconnect/0
+        ]).
 
 %% gen_server callbacks
 -export([
-    init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
-    code_change/3
-]).
+         init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
+         code_change/3
+        ]).
 
 %% @doc retrieve memcached stats
 stats() ->
@@ -282,64 +282,64 @@ handle_call({getskey, {Key}}, _From, Socket) ->
 
 handle_call({delete, {Key, Time}}, _From, Socket) ->
     Reply = send_generic_cmd(
-        Socket,
-        iolist_to_binary([<<"delete ">>, Key, <<" ">>, Time])
-    ),
+              Socket,
+              iolist_to_binary([<<"delete ">>, Key, <<" ">>, Time])
+             ),
     {reply, Reply, Socket};
 
 handle_call({set, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
 	Bin = term_to_binary(Value),
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
-        Socket,
-        iolist_to_binary([
-            <<"set ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes
-        ]),
-        Bin
-    ),
+              Socket,
+              iolist_to_binary([
+                                <<"set ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes
+                               ]),
+              Bin
+             ),
     {reply, Reply, Socket};
 
 handle_call({add, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
 	Bin = term_to_binary(Value),
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
-        Socket,
-        iolist_to_binary([
-            <<"add ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes
-        ]),
-        Bin
-    ),
+              Socket,
+              iolist_to_binary([
+                                <<"add ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes
+                               ]),
+              Bin
+             ),
     {reply, Reply, Socket};
 
 handle_call({replace, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
 	Bin = term_to_binary(Value),
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
-        Socket,
-        iolist_to_binary([
-            <<"replace ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>,
-            Bytes
-        ]),
-    	Bin
-    ),
+              Socket,
+              iolist_to_binary([
+                                <<"replace ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>,
+                                Bytes
+                               ]),
+              Bin
+             ),
     {reply, Reply, Socket};
 
 handle_call({cas, {Key, Flag, ExpTime, CasUniq, Value}}, _From, Socket) ->
 	Bin = term_to_binary(Value),
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
-        Socket,
-        iolist_to_binary([
-            <<"cas ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes,
-            <<" ">>, CasUniq
-        ]),
-        Bin
-    ),
+              Socket,
+              iolist_to_binary([
+                                <<"cas ">>, Key, <<" ">>, Flag, <<" ">>, ExpTime, <<" ">>, Bytes,
+                                <<" ">>, CasUniq
+                               ]),
+              Bin
+             ),
     {reply, Reply, Socket}.
 
 %% @private
 handle_cast(stop, State) ->
-   {stop, normal, State};
+    {stop, normal, State};
 
 handle_cast(_Msg, State) -> {noreply, State}.
 
@@ -442,7 +442,7 @@ get_data(Socket, Bin, Bytes, Len) when Len < Bytes + 7->
             get_data(Socket, Combined, Bytes, size(Combined));
      	{error, closed} ->
   			connection_closed
-        after ?TIMEOUT -> timeout
+    after ?TIMEOUT -> timeout
     end;
 get_data(_, Data, Bytes, _) ->
 	<<Bin:Bytes/binary, "\r\nEND\r\n">> = Data,
