@@ -249,7 +249,7 @@ init([Host, Port]) ->
     gen_tcp:connect(Host, Port, ?TCP_OPTS).
 
 handle_call(stats, _From, Socket) ->
-    Reply = send_generic_cmd(Socket, iolist_to_binary([<<"stats">>])),
+    Reply = send_generic_cmd(Socket, <<"stats">>),
     {reply, Reply, Socket};
 
 handle_call({stats, Args}, _From, Socket) ->
@@ -257,7 +257,7 @@ handle_call({stats, Args}, _From, Socket) ->
     {reply, Reply, Socket};
 
 handle_call(version, _From, Socket) ->
-    Reply = send_generic_cmd(Socket, iolist_to_binary([<<"version">>])),
+    Reply = send_generic_cmd(Socket, <<"version">>),
     {reply, Reply, Socket};
 
 handle_call({verbosity, Args}, _From, Socket) ->
@@ -265,7 +265,7 @@ handle_call({verbosity, Args}, _From, Socket) ->
     {reply, Reply, Socket};
 
 handle_call(flushall, _From, Socket) ->
-    Reply = send_generic_cmd(Socket, iolist_to_binary([<<"flush_all">>])),
+    Reply = send_generic_cmd(Socket, <<"flush_all">>),
     {reply, Reply, Socket};
 
 handle_call({flushall, Delay}, _From, Socket) ->
@@ -353,8 +353,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %% @private
 %% @doc Closes the socket
 terminate(_Reason, Socket) ->
-    gen_tcp:close(Socket),
-    ok.
+    gen_tcp:close(Socket).
 
 %% @private
 %% @doc send_generic_cmd/2 function for simple informational and deletion commands
@@ -390,7 +389,7 @@ send_gets_cmd(Socket, Cmd) ->
 recv_simple_reply() ->
 	receive
 	  	{tcp,_,Data} ->
-        	string:tokens(binary_to_list(Data), "\r\n");
+        	binary:split(Data, <<"\r\n">>, [global, trim]);
         {error, closed} ->
   			connection_closed
     after ?TIMEOUT -> timeout
@@ -405,11 +404,15 @@ recv_complex_get_reply(Socket) ->
 		%% For receiving get responses containing data
 		{tcp, Socket, Data} ->
 			%% Reply format <<"VALUE SOMEKEY FLAG BYTES\r\nSOMEVALUE\r\nEND\r\n">>
-  			Parse = io_lib:fread("~s ~s ~u ~u\r\n", binary_to_list(Data)),
-  			{ok,[_,_,_,Bytes], ListBin} = Parse,
-  			Bin = list_to_binary(ListBin),
-  			Reply = get_data(Socket, Bin, Bytes, length(ListBin)),
-  			[Reply];
+            [FirstLine, Bin] = binary:split(Data, <<"\r\n">>),
+            [_, _, _, Bytes] = binary:split(FirstLine, <<" ">>, [global]),
+
+            case catch list_to_integer(binary_to_list(Bytes)) of
+                {'EXIT', Reason} ->
+                    {error, Reason};
+                B ->
+                    [get_data(Socket, Bin, B, size(Bin))]
+            end;
   		{error, closed} ->
   			connection_closed
     after ?TIMEOUT -> timeout
@@ -424,11 +427,15 @@ recv_complex_gets_reply(Socket) ->
 		%% For receiving get responses containing data
 		{tcp, Socket, Data} ->
 			%% Reply format <<"VALUE SOMEKEY FLAG BYTES\r\nSOMEVALUE\r\nEND\r\n">>
-  			Parse = io_lib:fread("~s ~s ~u ~u ~u\r\n", binary_to_list(Data)),
-  			{ok,[_,_,_,Bytes,CasUniq], ListBin} = Parse,
-  			Bin = list_to_binary(ListBin),
-  			Reply = get_data(Socket, Bin, Bytes, length(ListBin)),
-  			[CasUniq, Reply];
+            [FirstLine, Bin] = binary:split(Data, <<"\r\n">>),
+            [_, _, _, Bytes, CasUniq] = binary:split(FirstLine, <<" ">>, [global]),
+            case catch list_to_integer(binary_to_list(Bytes)) of
+                {'EXIT', Reason} ->
+                    {error, Reason};
+                B ->
+                    Reply = get_data(Socket, Bin, B, size(Bin)),
+                    [list_to_integer(binary_to_list(CasUniq)), Reply]
+            end;
   		{error, closed} ->
   			connection_closed
     after ?TIMEOUT -> timeout
