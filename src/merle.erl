@@ -166,7 +166,7 @@ set(Key, Flag, ExpTime, Value) when is_integer(Flag) ->
 set(Key, Flag, ExpTime, Value) when is_integer(ExpTime) ->
     set(Key, Flag, integer_to_list(ExpTime), Value);
 set(Key, Flag, ExpTime, Value) ->
-	case gen_server2:call(?SERVER, {set, {Key, Flag, ExpTime, Value}}) of
+	case gen_server2:call(?SERVER, {set, {Key, Flag, ExpTime, term_to_binary(Value)}}) of
 	    ["STORED"] -> ok;
 	    ["NOT_STORED"] -> not_stored;
 	    [X] -> X
@@ -184,7 +184,7 @@ add(Key, Flag, ExpTime, Value) when is_integer(Flag) ->
 add(Key, Flag, ExpTime, Value) when is_integer(ExpTime) ->
     add(Key, Flag, integer_to_list(ExpTime), Value);
 add(Key, Flag, ExpTime, Value) ->
-	case gen_server2:call(?SERVER, {add, {Key, Flag, ExpTime, Value}}) of
+	case gen_server2:call(?SERVER, {add, {Key, Flag, ExpTime, term_to_binary(Value)}}) of
 	    ["STORED"] -> ok;
 	    ["NOT_STORED"] -> not_stored;
 	    [X] -> X
@@ -202,7 +202,7 @@ replace(Key, Flag, ExpTime, Value) when is_integer(Flag) ->
 replace(Key, Flag, ExpTime, Value) when is_integer(ExpTime) ->
     replace(Key, Flag, integer_to_list(ExpTime), Value);
 replace(Key, Flag, ExpTime, Value) ->
-	case gen_server2:call(?SERVER, {replace, {Key, Flag, ExpTime, Value}}) of
+	case gen_server2:call(?SERVER, {replace, {Key, Flag, ExpTime, term_to_binary(Value)}}) of
 	    ["STORED"] -> ok;
 	    ["NOT_STORED"] -> not_stored;
 	    [X] -> X
@@ -222,7 +222,7 @@ cas(Key, Flag, ExpTime, CasUniq, Value) when is_integer(ExpTime) ->
 cas(Key, Flag, ExpTime, CasUniq, Value) when is_integer(CasUniq) ->
     cas(Key, Flag, ExpTime, integer_to_list(CasUniq), Value);
 cas(Key, Flag, ExpTime, CasUniq, Value) ->
-	case gen_server2:call(?SERVER, {cas, {Key, Flag, ExpTime, CasUniq, Value}}) of
+	case gen_server2:call(?SERVER, {cas, {Key, Flag, ExpTime, CasUniq, term_to_binary(Value)}}) of
 	    ["STORED"] -> ok;
 	    ["NOT_STORED"] -> not_stored;
 	    [X] -> X
@@ -287,8 +287,7 @@ handle_call({delete, {Key, Time}}, _From, Socket) ->
              ),
     {reply, Reply, Socket};
 
-handle_call({set, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
-	Bin = term_to_binary(Value),
+handle_call({set, {Key, Flag, ExpTime, Bin}}, _From, Socket) ->
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
               Socket,
@@ -299,8 +298,7 @@ handle_call({set, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
              ),
     {reply, Reply, Socket};
 
-handle_call({add, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
-	Bin = term_to_binary(Value),
+handle_call({add, {Key, Flag, ExpTime, Bin}}, _From, Socket) ->
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
               Socket,
@@ -311,8 +309,7 @@ handle_call({add, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
              ),
     {reply, Reply, Socket};
 
-handle_call({replace, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
-	Bin = term_to_binary(Value),
+handle_call({replace, {Key, Flag, ExpTime, Bin}}, _From, Socket) ->
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
               Socket,
@@ -324,8 +321,7 @@ handle_call({replace, {Key, Flag, ExpTime, Value}}, _From, Socket) ->
              ),
     {reply, Reply, Socket};
 
-handle_call({cas, {Key, Flag, ExpTime, CasUniq, Value}}, _From, Socket) ->
-	Bin = term_to_binary(Value),
+handle_call({cas, {Key, Flag, ExpTime, CasUniq, Bin}}, _From, Socket) ->
 	Bytes = integer_to_list(size(Bin)),
     Reply = send_storage_cmd(
               Socket,
