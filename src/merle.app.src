@@ -1,0 +1,8 @@
+{application, merle,
+ [
+  {description, "memcached Erlang driver"},
+  {vsn, "0.3"},
+  {registered, []},
+  {applications, [kernel,
+                  stdlib]},
+  {env, []}]}.

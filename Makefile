@@ -1,23 +1,17 @@
-LIBDIR=`erl -eval 'io:format("~s~n", [code:lib_dir()])' -s init stop -noshell`
-APP_NAME="merle"
-VSN="0.3"
+all: deps compile
 
-all: compile
+compile: rebar
+	./rebar compile
 
-docs:
-	erl -noshell -run edoc_run application "'$(APP_NAME)'" '"."' '$(VSN)' -s init stop
+deps: rebar
+	./rebar get-deps
 
-compile:
-	@mkdir -p ebin
-	@erl -make
+clean: rebar
+	./rebar clean
 
-clean:
-	rm -f ebin/*.beam
-	rm -f erl_crash.dump
+test: compile
+	ERL_FLAGS="+A 32" ./rebar skip_deps=true eunit
 
-test: all
-	prove -v t/*.t
-
-install: all
-	mkdir -p ${LIBDIR}/${APP_NAME}-${VSN}/ebin
-	for i in ebin/*.beam; do install $$i $(LIBDIR)/${APP_NAME}-${VSN}/$$i ; done
+rebar:
+	wget -q http://cloud.github.com/downloads/basho/rebar/rebar
+	chmod u+x rebar
